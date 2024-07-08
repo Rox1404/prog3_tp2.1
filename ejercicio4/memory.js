@@ -10,15 +10,15 @@ class Card {
         const cardElement = document.createElement("div");
         cardElement.classList.add("cell");
         cardElement.innerHTML = `
-          <div class="card" data-name="${this.name}">
-              <div class="card-inner">
-                  <div class="card-front"></div>
-                  <div class="card-back">
-                      <img src="${this.img}" alt="${this.name}">
-                  </div>
-              </div>
-          </div>
-      `;
+        <div class="card" data-name="${this.name}">
+            <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back">
+                    <img src="${this.img}" alt="${this.name}">
+                </div>
+            </div>
+        </div>
+    `;
         return cardElement;
     }
 
@@ -31,6 +31,19 @@ class Card {
         const cardElement = this.element.querySelector(".card");
         cardElement.classList.remove("flipped");
     }
+    //cambio
+    toggleFlip(){
+        this.isFlipped = !this.isFlipped;
+        if (this.isFlipped) {
+            this.#flip();
+        }else {
+            this.#unflip();
+        }
+    }
+
+    matches(otherCard) {
+        return this.name === otherCard.name;
+    }//fin
 }
 
 class Board {
@@ -69,6 +82,25 @@ class Board {
         });
     }
 
+    shuffleCards() { //cambio
+        this.cards.sort(() => Math.random() - 0.5);
+    }
+
+    reset() {
+        this.shuffleCards();
+        this.cards.forEach(card => card.isFlipped = false);
+        this.render();
+    }
+
+    flipDownAllCards() {
+        this.cards.forEach(card => {
+            if (card.isFlipped) {
+                card.toggleFlip();
+            }
+        });
+    }  //fin
+    
+
     onCardClicked(card) {
         if (this.onCardClick) {
             this.onCardClick(card);
@@ -81,6 +113,11 @@ class MemoryGame {
         this.board = board;
         this.flippedCards = [];
         this.matchedCards = [];
+        this.moveCount = 0;   //  agrego cambio
+        this.startTime = null;
+        this.endTime = null;
+        this.timerInterval = null;  //fin cambio
+        
         if (flipDuration < 350 || isNaN(flipDuration) || flipDuration > 3000) {
             flipDuration = 350;
             alert(
@@ -90,7 +127,26 @@ class MemoryGame {
         this.flipDuration = flipDuration;
         this.board.onCardClick = this.#handleCardClick.bind(this);
         this.board.reset();
+        this.startGame(); // Agrego cambio en esta linea
     }
+
+    startGame() { // agrego metodo
+        this.startTime = new Date();
+        this.timerInterval = setInterval(() => this.updateGameInfo(), 1000);
+    }
+
+    updateGameInfo() {
+        this.moveCount++;
+        const elapsedSeconds = Math.floor((new Date() - this.startTime) / 1000);
+        const score = this.calculateScore(elapsedSeconds, this.moveCount);
+        this.displayGameInfo(this.moveCount, elapsedSeconds, score);
+    }
+
+    displayGameInfo(moves, time, score) {
+        document.getElementById("move-counter").textContent = `Movimientos: ${moves}`;
+        document.getElementById("timer").textContent = `Tiempo: ${time}s`;
+        document.getElementById("score").textContent = `Puntuación: ${score}`;
+    }  //fin cambio
 
     #handleCardClick(card) {
         if (this.flippedCards.length < 2 && !card.isFlipped) {
@@ -102,6 +158,42 @@ class MemoryGame {
             }
         }
     }
+
+    checkForMatch() {   //agrego metodos, cambios
+        const [firstCard, secondCard] = this.flippedCards;
+        if (firstCard.matches(secondCard)) {
+            this.matchedCards.push(firstCard, secondCard);
+            this.flippedCards = [];
+            if (this.matchedCards.length === this.board.cards.length) {
+                clearInterval(this.timerInterval);
+                this.endTime = new Date();
+                const timeTaken = (this.endTime - this.startTime) / 1000;
+                const score = this.calculateScore(timeTaken, this.moveCount);
+                alert(`¡Has ganado! Tiempo: ${timeTaken} segundos, Movimientos: ${this.moveCount}, Puntuación: ${score}`);
+            }
+        } else {
+            setTimeout(() => {
+                firstCard.toggleFlip();
+                secondCard.toggleFlip();
+                this.flippedCards = [];
+            }, this.flipDuration);
+        }
+    }
+
+    calculateScore(time, moves) {
+        return Math.max(1000 - (time + moves * 10), 0);
+    }
+
+    resetGame() {
+        clearInterval(this.timerInterval);
+        this.flippedCards = [];
+        this.matchedCards = [];
+        this.moveCount = 0;
+        this.startTime = null;
+        this.endTime = null;
+        this.board.reset();
+        this.startGame();
+    }   //fin cambio
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -125,3 +217,4 @@ document.addEventListener("DOMContentLoaded", () => {
         memoryGame.resetGame();
     });
 });
+

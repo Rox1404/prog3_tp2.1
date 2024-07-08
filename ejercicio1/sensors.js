@@ -1,4 +1,22 @@
-class Sensor {}
+class Sensor {
+    constructor(id, name, type, value, unit, updated_at) { //cambio
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this._value = value;
+        this.unit = unit;
+        this.updated_at = updated_at;
+    }
+        get value() {
+        return this._value;
+    }
+
+    
+    set updateValue(newValue) {
+        this._value = newValue;
+        this.updated_at = new Date().toISOString();
+    } //hasta aqui el cambio
+}
 
 class SensorManager {
     constructor() {
@@ -33,7 +51,27 @@ class SensorManager {
         }
     }
 
-    async loadSensors(url) {}
+    async loadSensors(url) {  //cambio
+        try {
+            const response = await fetch(url);
+            const sensorsData = await response.json();
+            sensorsData.forEach((sensorData) => {
+                const sensor = new Sensor(
+                    sensorData.id,
+                    sensorData.name,
+                    sensorData.type,
+                    sensorData.value,
+                    sensorData.unit,
+                    sensorData.updated_at
+                );
+                this.addSensor(sensor);
+            });
+            this.render();
+        } catch (error) {
+            console.error('Error al cargar los sensores:' , error);
+        }
+} //hasta aqui cambio
+
 
     render() {
         const container = document.getElementById("sensor-container");
@@ -54,8 +92,8 @@ class SensorManager {
                                 <strong>Tipo:</strong> ${sensor.type}
                             </p>
                             <p>
-                               <strong>Valor:</strong> 
-                               ${sensor.value} ${sensor.unit}
+                            <strong>Valor:</strong>
+                            ${sensor.value} ${sensor.unit}
                             </p>
                         </div>
                         <time datetime="${sensor.updated_at}">
@@ -84,6 +122,7 @@ class SensorManager {
         });
     }
 }
+    
 
 const monitor = new SensorManager();
 
